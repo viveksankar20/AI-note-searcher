@@ -1,11 +1,11 @@
 {
   "name": "ai-note-searcher-backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "api/index.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node api/index.js",
+    "dev": "nodemon api/index.js"
   },
   "dependencies": {
     "axios": "^1.7.2",
