@@ -2,13 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const serverless = require('serverless-http');
+// const serverless = require('serverless-http');
 
 dotenv.config();
 
-const authRoutes = require('../routes/auth');
-const noteRoutes = require('../routes/notes');
-const searchRoutes = require('../routes/search');
+const authRoutes = require('./routes/auth');
+const noteRoutes = require('./routes/notes');
+const searchRoutes = require('./routes/search');
 
 const app = express();
 app.use(cors());
@@ -31,5 +31,5 @@ app.use('/api/search', searchRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-module.exports = serverless(app);
+// module.exports = serverless(app);
 
