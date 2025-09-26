@@ -59,6 +59,129 @@ npm run dev
 
 ---
 
+## Demo: Inputs & Outputs
+
+Below is a minimal dataset + example calls and responses so you can verify both search modes quickly.
+
+### Seed notes (create from UI or API)
+
+**Note 1**
+```json
+{
+  "title": "Meeting with product team",
+  "content": "We discussed new AI features for the dashboard and planned a Q4 launch.",
+  "tags": ["meeting", "product"]
+}
+```
+
+**Note 2**
+```json
+{
+  "title": "Grocery List",
+  "content": "Milk, bread, bananas, green tea, and eggs",
+  "tags": ["personal", "shopping"]
+}
+```
+
+**Note 3**
+```json
+{
+  "title": "AI Research Ideas",
+  "content": "Investigate semantic search with embeddings. Compare Hugging Face and OpenAI models.",
+  "tags": ["ai", "research"]
+}
+```
+
+> After creating/updating notes with the backend running and `HF_API_KEY` set, embeddings are stored automatically for semantic search.
+
+### A) Keyword search (MongoDB text index)
+
+**Request**
+```
+GET /api/search?query=AI&mode=keyword
+Authorization: Bearer <JWT>
+```
+
+**Response (example)**
+```json
+{
+  "mode": "keyword",
+  "results": [
+    {
+      "_id": "652c01...",
+      "title": "Meeting with product team",
+      "content": "We discussed new AI features for the dashboard and planned a Q4 launch.",
+      "tags": ["meeting","product"],
+      "score": 1.2
+    },
+    {
+      "_id": "652c02...",
+      "title": "AI Research Ideas",
+      "content": "Investigate semantic search with embeddings. Compare Hugging Face and OpenAI models.",
+      "tags": ["ai","research"],
+      "score": 0.9
+    }
+  ]
+}
+```
+
+### B) AI semantic search (embeddings + cosine similarity)
+
+**Request**
+```
+GET /api/search?query=shopping list&mode=semantic
+Authorization: Bearer <JWT>
+```
+
+**Response (example)**
+```json
+{
+  "mode": "semantic",
+  "results": [
+    {
+      "_id": "652c03...",
+      "title": "Grocery List",
+      "content": "Milk, bread, bananas, green tea, and eggs",
+      "tags": ["personal","shopping"],
+      "score": 0.94
+    },
+    {
+      "_id": "652c01...",
+      "title": "Meeting with product team",
+      "content": "We discussed new AI features for the dashboard and planned a Q4 launch.",
+      "tags": ["meeting","product"],
+      "score": 0.12
+    }
+  ]
+}
+```
+
+### (Optional) Sentence Similarity mode
+
+If you prefer to avoid storing embeddings, you can switch the semantic branch to call the **Sentence Similarity** pipeline instead and send:
+
+```json
+{
+  "inputs": {
+    "source_sentence": "shopping list",
+    "sentences": [
+      "Milk, bread and eggs",
+      "We discussed AI features",
+      "Team offsite next week"
+    ]
+  }
+}
+```
+
+**Response (example)** — array of similarity scores in the same order as `sentences`:
+```json
+[0.91, 0.08, 0.05]
+```
+
+> This approach is easy to demo but less scalable because each search sends all note texts to the API. The default embedding approach is better for frequent searches.
+
+---
+
 ## How it works
 
 ### Keyword search
@@ -68,14 +191,14 @@ npm run dev
 
 ### Semantic search
 - Endpoint: `GET /api/search?query=...&mode=semantic`
-- Backend hits Hugging Face Inference API (feature-extraction pipeline) to get a vector embedding for the **query**.
-- We pre-store an embedding for each note (created/updated) and compute **cosine similarity** in Node.js, then sort.
+- Backend hits Hugging Face Inference API (feature-extraction) to get a vector embedding for the **query**.
+- Each note stores an embedding (on create/update). We compute **cosine similarity** in Node.js and sort.
 
-> Tip: You can re-embed existing notes by updating them (or write a small script) if you added the HF key later.
+> Tip: If you add `HF_API_KEY` later, just edit & save a note to generate its embedding. You can also write a small script to re-embed all notes.
 
 ### Security
 - JWT-based auth (`/api/auth/register`, `/api/auth/login`).
-- React stores token in `localStorage` and attaches it to API requests.
+- React stores token in context/localStorage and attaches it to API requests.
 - Express middleware validates tokens for protected endpoints.
 
 ---
@@ -89,5 +212,5 @@ npm run dev
 
 ## Notes
 - Free tiers (MongoDB/Hugging Face) have quotas; for production, consider managed vector DBs or MongoDB Atlas Vector Search.
-- The current semantic search fetches your notes, computes similarity in-memory (fine for small–medium note counts).
-- If you prefer OpenAI/Cohere/Voyage embeddings, swap the code in `backend/utils/embedding.js`.
+- Current semantic search ranks in-memory; good for small–medium note counts.
+- Prefer OpenAI/Cohere/Voyage embeddings? Swap `backend/utils/embedding.js` accordingly.
