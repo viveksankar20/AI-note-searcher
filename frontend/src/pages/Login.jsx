@@ -1,21 +1,23 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiPost } from '../api'
+import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-
+const { login } = useAuth()
   async function onSubmit(e) {
     e.preventDefault()
     setError('')
     try {
       const data = await apiPost('/auth/login', { email, password })
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
-      navigate('/dashboard')
+    
+      login(data.token, data.user)
+  navigate('/dashboard', { replace: true })
+      console.log("logined")
     } catch (err) {
       setError('Invalid credentials or server error')
     }
